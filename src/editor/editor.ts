@@ -88,19 +88,24 @@ export class Editor extends EventTarget {
   }
 
   // Update the loadSelect dropdown
-  updateLoadSelect() {
+  updateLoadSelect(selectedName?: string) {
     this.loadSelect.innerHTML = '';
 
     let hasSavedItems = false;
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       // Exclude 'latheCode' from the dropdown options
-      if (key && key !== 'latheCode') {
+      if (key && key !== 'latheCode' && key.startsWith('latheCode-')) {
         hasSavedItems = true;
         const option = document.createElement('option');
+        const displayName = key.replace('latheCode-', '');
         option.value = key;
-        option.textContent = key;
+        option.textContent = displayName;
         this.loadSelect.appendChild(option);
+
+        if (key === selectedName) {
+          option.selected = true;
+        }
       }
     }
 
@@ -126,12 +131,9 @@ export class Editor extends EventTarget {
   saveLatheCode() {
     const saveName = this.saveNameInput.value.trim();
     if (!saveName) return; // Handle empty name case
-    localStorage.setItem(saveName, this.latheCodeInput.value);
-    this.updateLoadSelect();
-
-    // Set the newly saved item as the selected option in the dropdown
-    this.loadSelect.value = saveName;
-
+    const prefixedName = `latheCode-${saveName}`;
+    localStorage.setItem(prefixedName, this.latheCodeInput.value);
+    this.updateLoadSelect(prefixedName);
     this.saveNameInput.value = '';
   }
 

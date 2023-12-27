@@ -70,6 +70,17 @@ L3</textarea>
       <button class="stopButton" style="display: none;">Stop</button>
       <a class="whatLink" href="https://github.com/kachurovskiy/nanoels/tree/main/h4" target="_blank">What is NanoEls
         H4?</a>
+      <div class="toolbar">
+        <div class="save-group">
+          <input type="text" class="saveGCodeNameInput" placeholder="name of save"></input>
+          <button class="saveGCodeButton" title="Save GCode to local browser storage">Save local</button>
+        </div>
+        <div class="load-group">
+          <select class="loadGCodeSelect"></select>
+          <button class="loadGCodeButton" title="Load GCode from local browser storage">Load</button>
+          <button class="deleteGCodeButton" title="Delete GCode from local browser storage">Delete</button>
+        </div>
+      </div>
     </div>
   </div>
   <script type="module" src="/src/main.ts"></script>
