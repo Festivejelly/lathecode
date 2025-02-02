@@ -58,6 +58,7 @@ export class Planner extends EventTarget {
     }
     if (data.moves) {
       this.generationProgressMessage?.remove();
+      this.generationProgressMessage = null;
       this.moves = data.moves.map(m => {
         Object.setPrototypeOf(m, PixelMove.prototype);
         return m.toMove(PX_PER_MM);
@@ -114,7 +115,7 @@ export class Planner extends EventTarget {
     const button = document.createElement('button');
     button.innerText = 'Zoom in';
     button.addEventListener('click', () => {
-      createFullScreenDialog(createMovesCanvas(moves, window.visualViewport!.width - 100, window.visualViewport!.height - 100), 'Toolpath');
+      createFullScreenDialog(createMovesCanvas(moves, window.visualViewport!.width - 100, window.visualViewport!.height - 200), 'Toolpath');
     });
     this.container.appendChild(button);
   }
@@ -141,14 +142,21 @@ function createMovesCanvas(moves: Move[], width: number, height: number): HTMLCa
 
   const context = canvas.getContext('2d')!;
   context.lineWidth = 1;
-  moves.forEach(move => {
+  const drawMove = (move: Move) => {
     context.beginPath();
     context.strokeStyle = move.cutAreaMmSq ? 'red' : 'green';
     const xOffset = move.cutAreaMmSq ? 0 : 1;
     context.moveTo(xToPx(move.xStartMm) + xOffset, yToPx(move.yStartMm));
     context.lineTo(xToPx(move.xStartMm + move.xDeltaMm) + xOffset, yToPx(move.yStartMm + move.yDeltaMm));
     context.stroke();
-  });
+  }
+  const runDrawMoveWithDelay = (moves: Move[], index: number) => {
+    if (index < moves.length) {
+        drawMove(moves[index]);
+        setTimeout(() => runDrawMoveWithDelay(moves, index + 1), 50);
+    }
+  }
+  runDrawMoveWithDelay(moves, 0);
 
   return canvas;
 }

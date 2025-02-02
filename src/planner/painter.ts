@@ -50,6 +50,48 @@ export class Painter {
       ctx.stroke();
       return result;
     }
+    if (tool.type === 'ANG') {
+      const edgeLengthMm = tool.widthMm;
+      const sizePixels = (tool.cornerRadiusMm + edgeLengthMm) * 2 * this.pxPerMm;
+      const cornerRadiusPixels = tool.cornerRadiusMm * this.pxPerMm;
+      const result = new OffscreenCanvas(sizePixels, sizePixels);
+      const ctx = result.getContext('2d')!;
+      ctx.strokeStyle = Colors.COLOR_TOOL.hex();
+      ctx.fillStyle = Colors.COLOR_TOOL_FILL.hex();
+      ctx.lineWidth = 2;
+
+      // Draw centered circle
+      ctx.beginPath();
+      ctx.arc(sizePixels / 2, sizePixels / 2, cornerRadiusPixels, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+
+      const noseAngleDeg = tool.noseAngleDeg ?? 0;
+      const rotation = tool.angleDeg ?? 0;
+      const leftArmStart = polarToCartesian(cornerRadiusPixels, 180 - noseAngleDeg / 2 + rotation);
+      leftArmStart.x += sizePixels / 2;
+      leftArmStart.y += sizePixels / 2;
+      const leftArmEnd = polarToCartesian(edgeLengthMm * this.pxPerMm, 270 - noseAngleDeg / 2 + rotation);
+      leftArmEnd.x += leftArmStart.x;
+      leftArmEnd.y += leftArmStart.y;
+      const rightArmStart = polarToCartesian(cornerRadiusPixels, noseAngleDeg / 2 + rotation);
+      rightArmStart.x += sizePixels / 2;
+      rightArmStart.y += sizePixels / 2;
+      const rightArmEnd = polarToCartesian(edgeLengthMm * this.pxPerMm, 270 + noseAngleDeg / 2 + rotation);
+      rightArmEnd.x += rightArmStart.x;
+      rightArmEnd.y += rightArmStart.y;
+      ctx.beginPath();
+      ctx.moveTo(leftArmStart.x, leftArmStart.y);
+      ctx.lineTo(leftArmEnd.x, leftArmEnd.y);
+      ctx.lineTo(rightArmEnd.x, rightArmEnd.y);
+      ctx.lineTo(rightArmStart.x, rightArmStart.y);
+      ctx.lineTo(leftArmStart.x, leftArmStart.y);
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      return cropCanvas(result);
+    }
     throw new Error(`tool of type ${tool.type} not implemented`);
   }
 
@@ -64,8 +106,11 @@ export class Painter {
     if (!insideSegments.length && !outsideSegments.length) throw new Error('Error: no segments');
     const canvas = new OffscreenCanvas(stock.length * this.pxPerMm, stock.diameter / 2 * this.pxPerMm);
     const ctx = canvas.getContext('2d')!;
+    const segments = insideSegments.length ? insideSegments : outsideSegments;
+    const finishDepth = this.latheCode.getDepth().finishMm * (insideSegments.length ? -1 : 1);
     this.fillSegments(ctx, stock.getSegments(), Colors.COLOR_STOCK.hex());
-    this.fillSegments(ctx, insideSegments.length ? insideSegments : outsideSegments, Colors.COLOR_PART.hex());
+    if (finishDepth !== 0) this.fillSegments(ctx, segments.map(s => s.offsetBy(finishDepth, 0)), Colors.COLOR_FINISH.hex());
+    this.fillSegments(ctx, segments, Colors.COLOR_PART.hex());
     return canvas;
   }
 
@@ -114,4 +159,30 @@ export class Painter {
   private zToX(z: number) {
     return this.latheCode.getStock()!.length * this.pxPerMm - z * this.pxPerMm;
   }
+}
+
+export function cropCanvas(originalCanvas: OffscreenCanvas): OffscreenCanvas {
+  const imageData = originalCanvas.getContext('2d')!.getImageData(0, 0, originalCanvas.width, originalCanvas.height);
+  const { data, width, height } = imageData;
+  let minX = width, minY = height, maxX = 0, maxY = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    const x = (i / 4) % width;
+    const y = Math.floor((i / 4) / width);
+    if (data[i + 3] > 0) { // alpha
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+  const croppedWidth = maxX - minX + 1;
+  const croppedHeight = maxY - minY + 1;
+  const croppedCanvas = new OffscreenCanvas(croppedWidth, croppedHeight);
+  croppedCanvas.getContext('2d')!.drawImage(originalCanvas, minX, minY, croppedWidth, croppedHeight, 0, 0, croppedWidth, croppedHeight);
+  return croppedCanvas;
+}
+
+export function polarToCartesian(radius: number, angleInDegrees: number): { x: number; y: number } {
+  const a = (angleInDegrees * Math.PI) / 180;
+  return { x: radius * Math.cos(a), y: -radius * Math.sin(a) }; // negative Y because canvas Y points down
 }
