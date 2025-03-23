@@ -2,7 +2,8 @@ import { LatheCode } from '../common/lathecode';
 import InlineWorker from './plannerworker?worker&inline';
 import { FromWorkerMessage, ToWorkerMessage } from './plannerworker';
 import { Move } from '../common/move';
-import { PixelMove } from './pixel';
+import { PixelMove } from '../common/pixel';
+import { createFullScreenDialog } from '../common/dialog';
 
 const PX_PER_MM = 100;
 const CANVAS_SIZE = 500;
@@ -31,6 +32,7 @@ export class Planner extends EventTarget {
       }
       this.container.replaceChildren();
       this.canvasContainer = null;
+      this.generationProgressMessage = null;
       this.canvas = null;
       this.tool = null;
     }
@@ -137,6 +139,7 @@ function createMovesCanvas(moves: Move[], width: number, height: number): HTMLCa
   const yToPx = (yMm: number): number => { return (maxYMm - yMm) * coeff; };
 
   const canvas = document.createElement('canvas');
+  canvas.className = 'moves';
   canvas.width = width;
   canvas.height = Math.ceil(coeff * (maxYMm - minYMm));
 
@@ -150,10 +153,13 @@ function createMovesCanvas(moves: Move[], width: number, height: number): HTMLCa
     context.lineTo(xToPx(move.xStartMm + move.xDeltaMm) + xOffset, yToPx(move.yStartMm + move.yDeltaMm));
     context.stroke();
   }
+  const timeMs = getMoveTimeout();
   const runDrawMoveWithDelay = (moves: Move[], index: number) => {
     if (index < moves.length) {
         drawMove(moves[index]);
-        setTimeout(() => runDrawMoveWithDelay(moves, index + 1), 50);
+        const next = () => runDrawMoveWithDelay(moves, index + 1);
+        if (timeMs) setTimeout(next, timeMs);
+        else next();
     }
   }
   runDrawMoveWithDelay(moves, 0);
@@ -161,29 +167,9 @@ function createMovesCanvas(moves: Move[], width: number, height: number): HTMLCa
   return canvas;
 }
 
-function createFullScreenDialog(element: HTMLElement, title: string) {
-  const dialogContainer = document.createElement('div');
-  dialogContainer.style.position = 'fixed';
-  dialogContainer.style.top = '0';
-  dialogContainer.style.left = '0';
-  dialogContainer.style.width = '100%';
-  dialogContainer.style.height = '100%';
-  dialogContainer.style.backgroundColor = 'white';
-  dialogContainer.style.padding = '12px';
-
-  const dialogTitle = document.createElement('h2');
-  dialogTitle.textContent = title;
-  dialogContainer.appendChild(dialogTitle);
-
-  dialogContainer.appendChild(element);
-  element.style.margin = '12px';
-
-  const closeButton = document.createElement('button');
-  closeButton.textContent = 'Close';
-  closeButton.style.display = 'block';
-  closeButton.addEventListener('click', () => {
-    document.body.removeChild(dialogContainer);
-  });
-  dialogContainer.appendChild(closeButton);
-  document.body.appendChild(dialogContainer);
+function getMoveTimeout() {
+  const params = new URLSearchParams(window.location.search);
+  const value = params.get('moveTimeout');
+  if (value) return Number(value);
+  return 50;
 }

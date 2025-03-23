@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import {parser} from './parser.js'
 
 export class Point {
@@ -24,6 +25,7 @@ export class Segment {
   }
 
   isColinear(other: Segment) {
+    if (this.type !== 'LINE' || this.type !== other.type) return;
     const thisXDelta = this.end.x - this.start.x;
     const otherXDelta = other.end.x - other.start.x;
     const slope1 = (this.end.z - this.start.z) / thisXDelta;
@@ -99,9 +101,9 @@ export class LatheCode {
     this.data = parser.parse(text + '\n');
     this.unitsMultiplier = this.data[1] ? UNITS[this.data[1][2] as string] : 1;
     // console.log('this.data', this.data);
-    this.outside = this.getSegmentsForSide(this.data[10], 0);
+    this.outside = this.getSegmentsForSide(this.data[this.data.length - 3], 0);
     this.outsideMaxRadius = this.outside.length ? Math.max.apply(null, this.outside.map(p => Math.max(p.start.x, p.end.x))) : 0;
-    this.inside = this.data[11] ? this.getSegmentsForSide(this.data[11][2], this.getStockDiameter() / 2) : [];
+    this.inside = this.data[this.data.length - 2] ? this.getSegmentsForSide(this.data[this.data.length - 2][2], this.getStockDiameter() / 2) : [];
     this.outsideSegments = this.closeLoop(this.outside, 0);
     this.insideSegments = this.getStockDiameter() > 0 ? this.closeLoop(this.inside, this.getStockDiameter() / 2) : [];
     this.getTool(); // validate the tool
@@ -121,8 +123,15 @@ export class LatheCode {
     return d > 0 && l > 0 ? new Stock(d, l) : null;
   }
 
+  getBoundingBox(): THREE.Vector3 {
+    const stock = this.getStock();
+    if (!stock) return new THREE.Vector3();
+    if (stock.diameter > stock.length) return new THREE.Vector3(stock.diameter, stock.diameter, stock.length);
+    return new THREE.Vector3(stock.length, stock.diameter, stock.diameter);
+  }
+
   getTool(): Tool {
-    if (!this.data[5]) return new Tool('RECT', 3, 0.8, 0.4);
+    if (!this.data[5]) return new Tool('RECT', 3, 3, 0.4);
     const type = this.data[5][2];
     const params = this.data[5][4];
     const radius = params[0] ? params[0][1] * this.unitsMultiplier : 0;
@@ -135,7 +144,7 @@ export class LatheCode {
       if (noseAngle) throw new Error('NA not supported for TOOL RECT');
       // Rectangular tools in fact have sloping sides incapable of cutting.
       // Modelling these inserts as having small height fixes right-and-back cuts.
-      return new Tool('RECT', length || 3, height || (radius * 2), radius);
+      return new Tool('RECT', length || 3, height || length || 3, radius);
     } else if (type === 'ROUND') {
       if (length) throw new Error('TOOL ROUND L is already defined by R');
       if (height) throw new Error('TOOL ROUND H is already defined by R');
@@ -166,6 +175,25 @@ export class LatheCode {
     );
   }
 
+  getMode(): 'FACE'|'TURN' {
+    if (!this.data[11]?.length) return 'FACE';
+    return this.data[11][2];
+  }
+
+  getZDirection(): 'LEFT' | 'RIGHT' {
+    if (!this.data[13] || !this.data[13][2]) return 'LEFT';
+    return this.data[13][2][0];
+  }
+
+  getXDirection(): 'UP' | 'DOWN' {
+    if (!this.data[13] || !this.data[13][2]) return 'UP';
+    return this.data[13][2][2];
+  }
+
+  isNanoElsCompatible(): boolean {
+    return this.getZDirection() === 'LEFT' && this.getXDirection() === 'UP';
+  }
+
   /** Segments forming the part after outside cuts. */
   getOutsideSegments(): Segment[] {
     return this.outsideSegments.concat();
@@ -181,7 +209,7 @@ export class LatheCode {
     const result: number[] = [];
     let seenPart = false;
     let z = 0;
-    for (let commentsAndLine of this.data[10]) {
+    for (let commentsAndLine of this.data[this.data.length - 3]) {
       let line = commentsAndLine[1];
       if (isPartingLine(line) && seenPart) {
         result.push(z);

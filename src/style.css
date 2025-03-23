@@ -44,9 +44,51 @@ body {
   border-radius: 0;
 }
 
+.statusContainer:not(:empty) {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  right: 10px;
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #4c85ff;
+  color: #ffffff;
+  font-size: 14px;
+  border-radius: 0;
+}
+
+.fullScreenDialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: white;
+  padding: 8px 30px;
+}
+
+.dialogCloseButton {
+  margin-top: 12px;
+}
+
 #sceneContainer {
   width: 500px;
   height: 500px;
+}
+
+.selectorContainer {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.selectorScene {
+  cursor: pointer;
+  overflow: hidden;
+}
+.selectorScene:hover {
+  filter: hue-rotate(90deg);
 }
 
 #gcodeContainer {
@@ -92,6 +134,12 @@ button {
 button:hover {
   background-color: #ffff00;
 }
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
 
 progress {
   display: block;

@@ -118,11 +118,34 @@ L3
 
 ![image](https://github.com/kachurovskiy/lathecode/assets/517919/103f353a-4fa6-4354-9539-c0a814f7df25)
 
+## Axis direction
+
+By default Z increments to the left and X increments up (forward). This matches NanoEls convention but a lot of industry machines use exactly the opposite. To make the generated GCode compatible with those machines, use `AXES` directive:
+
+```
+STOCK D4
+AXES RIGHT DOWN
+L3 D3
+```
+
+## Turning vs. facing
+
+If you prefer material removal by turning instead of facing, use `MODE TURN` directive:
+
+```
+STOCK D4
+MODE TURN
+AXES RIGHT DOWN
+L3 D3
+```
+
 ## For developers
 
 If you'd like to edit the online editor code e.g. to modify the online editor, use `npm run dev` for local runs, `npm test` to run tests and `npm run build` to build the `docs/index.html` all-in-one editor webpage.
 
 ### PEG.js grammar
+
+Use [this parser generator](https://web.archive.org/web/20231228201451/https://pegjs.org/online) to convert the grammar below into `src/common/parser.js` file. Make sure to replace `module.exports = ` in the generated file with `export const parser = `.
 
 ```
 start =
@@ -131,6 +154,8 @@ comment* stock?
 comment* tool?
 comment* depth?
 comment* feed?
+comment* mode?
+comment* axes?
 (comment* lathe)*
 (comment* inside (comment* lathe)+)?
 comment*
@@ -155,6 +180,12 @@ depthParams = ("CUT" float)? ("FINISH" float)?
 
 feed = "FEED" spaces feedParams comment
 feedParams = ("MOVE" float)? ("PASS" float)? ("PART" float)?
+
+mode = "MODE" spaces modeParams comment
+modeParams = "FACE" / "TURN"
+
+axes = "AXES" spaces axesParams comment
+axesParams = ("LEFT" / "RIGHT") spaces ("UP" / "DOWN")
 
 inside = "INSIDE" comment
 

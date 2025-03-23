@@ -1,10 +1,18 @@
-import { Move } from "../common/move";
+import { Move } from "./move";
 
 export class Pixel {
   constructor(readonly x: number, readonly y: number) {}
 
   toString() {
     return `${this.x},${this.y}`;
+  }
+
+  equals(p: Pixel) {
+    return this.x === p.x && this.y === p.y;
+  }
+
+  toConstructorString() {
+    return `new Pixel(${this.x}, ${this.y})`;
   }
 }
 
@@ -30,7 +38,25 @@ export class PixelMove {
   }
 
   toMove(pxPerMm: number): Move {
-    return new Move(-this.xStart / pxPerMm, -this.yStart / pxPerMm, -this.xDelta / pxPerMm, -this.yDelta / pxPerMm, this.cutArea / pxPerMm / pxPerMm);
+    return new Move(
+      -this.xStart / pxPerMm,
+      -this.yStart / pxPerMm,
+      -this.xDelta / pxPerMm,
+      -this.yDelta / pxPerMm,
+      this.cutArea / pxPerMm / pxPerMm,
+      this.getMaxCutWidth() / pxPerMm,
+    );
+  }
+
+  getMaxCutWidth() {
+    if (!this.cutPixels.length) return 0;
+    let minX = this.cutPixels[0].x;
+    let maxX = minX;
+    for (let p of this.cutPixels) {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+    }
+    return maxX - minX + 1;
   }
 
   isEmpty() {

@@ -20,24 +20,27 @@
 STOCK D5
 ; STOCK R2.5 ; diameter or radius can be used
 
-TOOL RECT R0.2 L3
+TOOL RECT R0.2 L2
 ; TOOL ROUND R8 ; round tool is also supported
 ; TOOL ANG R0.2 L7.75 A30 NA55 ; L - edge length, NA - nose angle, A - tool rotation
 
 DEPTH CUT1 ; default depth of cut is 0.5mm
 ; FEED MOVE200 PASS50 PART10 ; speeds mm/min
+; MODE TURN ; for classic style of material removal
+; AXES RIGHT DOWN ; for non-NanoEls controllers
 
 L1 D2
 L3 D3
 L4 DS3 DE5
 L3</textarea>
+        <div class="statusContainer"></div>
         <div class="errorContainer"></div>
       </div>
       <div class="toolbar">
-        <button class="imageButton" title="Generate lathecode from a PNG image file">From image</button>
+        <button class="imageButton" title="Generate lathecode from a PNG image file">From image or STL</button>
         <button class="stlButton" title="Download STL file">To STL</button>
         <button class="planButton" title="Generate GCode from current lathecode">To GCode</button>
-        <button class="expandCollapseButton" title="See more options">More...</button>
+        <button class="expandCollapseButton" title="See more options">...</button>
       </div>
       <div id="moreOptions" class="toolbar">
         <hr />
@@ -61,7 +64,7 @@ L3</textarea>
     <div id="plannerContainer"></div>
     <div id="gcodeContainer">
       <h2>GCode</h2>
-      <textarea></textarea>
+      <textarea id="gcodeTextarea"></textarea>
       <div class="senderError" style="display: none;"></div>
       <progress max="1" style="display: none;"></progress>
       <button class="sendButton">Run on H4</button>

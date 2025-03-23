@@ -1,6 +1,6 @@
 {
   "name": "lathecode",
-  "version": "0.0.9",
+  "version": "0.0.23",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -13,13 +13,16 @@
     "@types/color": "^3.0.3",
     "@types/three": "^0.152.1",
     "jsdom": "^22.1.0",
+    "puppeteer": "^24.2.0",
     "typescript": "^5.0.2",
     "vite": "^4.3.9",
     "vite-plugin-singlefile": "^0.13.5",
     "vitest": "^0.31.4"
   },
   "dependencies": {
+    "@turf/boolean-valid": "^7.2.0",
     "color": "^4.2.3",
-    "three": "^0.153.0"
+    "polygon-clipping": "^0.15.7",
+    "three": "^0.173.0"
   }
 }
